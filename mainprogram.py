@@ -198,6 +198,9 @@ class IVMeasurement:
         '''
         Save IV result to CSV file
         '''
+        header = 'Voltage (V), Current (A)'
         currenttime = str(datetime.now()) # to add timestamp to filename
         outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
-        np.savetxt(outfile, result, delimiter=',', header=header)
+        #Debug
+        print(outfile)
+        np.savetxt(outfile, self.result, delimiter=',', header=header)
