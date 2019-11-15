@@ -16,6 +16,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import seaborn as sns
 
+# Imports for Phidget relay
+from Phidget22.Phidget import *
+from Phidget22.Devices.DigitalOutput import *
+
 class IVMeasurement:
     '''
     Commands to initialize and run measurements on Ossila X200
@@ -23,7 +27,7 @@ class IVMeasurement:
 
     def __init__(self, smu_ipaddress, verbose=False):
         '''
-        Initialize IVMeasurement object and create the GUI window
+        Initialize IVMeasurement object, create the GUI window, attach Phidget relay
         '''
         # Accept and store ip address of Ossila unit passed during instance creation
         self.smu_ipaddress = smu_ipaddress
@@ -61,6 +65,19 @@ class IVMeasurement:
         # Device params
         self.devicename = 'testdevice'
         self.devicedescription = 'v good solar cell'
+
+        # Create Phidget channels
+        #phidgetchannels = []
+        #for i in range(6):
+        #    phidgetchannels.append(DigitalOutput())
+        #    # Set serial number of hub port
+        #    phidgetchannels[i].setDeviceSerialNumber(563146) 
+        #    # Set hub port that the relay is connected to 
+        #    phidgetchannels[i].setHubPort(0)
+        #    # Set channel number
+        #    phidgetchannels[i].setChannel(i)
+        #    # Open channel
+        #    phidgetchannels[i].open()
 
         # Create the GUI
         self.master = tk.Tk()
@@ -106,6 +123,19 @@ class IVMeasurement:
         self.devicedescription_entry = tk.Entry(self.deviceframe)
         self.devicedescription_entry.insert(0, self.devicedescription)
         self.devicedescription_entry.grid(row=1, column=1)
+
+        # Pixel selector
+        self.pixelselectorframe = tk.Frame(self.deviceframe)
+        self.pixelselectorframe.grid(row=2, column=0)
+        tk.Label(self.pixelselectorframe, text='Pixels').grid(row=0, column=0)
+
+        # Variable to hold pixels selected
+        self.pixel_selection = []
+        self.pixel_letters = ['A', 'B', 'C', 'D', 'E', 'F']
+        self.num_devices_per_pixel = 6
+        for i in range(self.num_devices_per_pixel):
+            self.pixel_selection.append(tk.BooleanVar())
+            tk.Checkbutton(self.pixelselectorframe, text=self.pixel_letters[i], variable=self.pixel_selection[i]).grid(row=1, column=i)
 
         # IV sweep params 
         tk.Label(self.ivsweepframe, text='V start').grid(row=0,column=0)
@@ -171,7 +201,10 @@ class IVMeasurement:
             self.sweep_directions.append('reverse')
         if self.forwardIV:
             self.sweep_directions.append('forward')
-        self.pixels = ['A'] # TODO - replace with actual selector for pixels in GUI
+
+        for i in range(self.num_devices_per_pixel):
+            if self.pixel_selection[i].get():
+                self.pixels.append(self.pixel_letters[i])
 
         # Print user-input parameters if desired
         if self.verbose:
