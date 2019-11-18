@@ -67,17 +67,17 @@ class IVMeasurement:
         self.devicedescription = 'v good solar cell'
 
         # Create Phidget channels
-        #phidgetchannels = []
-        #for i in range(6):
-        #    phidgetchannels.append(DigitalOutput())
-        #    # Set serial number of hub port
-        #    phidgetchannels[i].setDeviceSerialNumber(563146) 
-        #    # Set hub port that the relay is connected to 
-        #    phidgetchannels[i].setHubPort(0)
-        #    # Set channel number
-        #    phidgetchannels[i].setChannel(i)
-        #    # Open channel
-        #    phidgetchannels[i].open()
+        self.phidgetchannels = []
+        for i in range(6):
+            self.phidgetchannels.append(DigitalOutput())
+            # Set serial number of hub port
+            self.phidgetchannels[i].setDeviceSerialNumber(563146) 
+            # Set hub port that the relay is connected to 
+            self.phidgetchannels[i].setHubPort(0)
+            # Set channel number
+            self.phidgetchannels[i].setChannel(i)
+            # Open channel
+            self.phidgetchannels[i].open()
 
         # Create the GUI
         self.master = tk.Tk()
@@ -85,16 +85,18 @@ class IVMeasurement:
 
         # Frames for input parameters and buttons
         self.setupframe = tk.Frame(self.master) # Frame for user-input setup parameters
-        self.setupframe.grid(row=0, column=0)
+        self.setupframe.grid(row=0, column=0, pady=10)
         self.range_selector_frame = tk.Frame(self.setupframe)
-        self.range_selector_frame.grid(row=1,column=0)
+        self.range_selector_frame.grid(row=1,column=0, pady=10)
 
         self.deviceframe = tk.Frame(self.master) # Frame for user-input device parameters
-        self.deviceframe.grid(row=1, column=0)
+        self.deviceframe.grid(row=1, column=0, pady=10)
+        self.pixelselectorframe = tk.Frame(self.master)
+        self.pixelselectorframe.grid(row=2, column=0)
         self.ivsweepframe = tk.Frame(self.master) # Frame for user-input IV sweep parameters
-        self.ivsweepframe.grid(row=2, column=0)
+        self.ivsweepframe.grid(row=2, column=0, pady=10)
         self.buttonframe = tk.Frame(self.master)
-        self.buttonframe.grid(row=3, column=0)
+        self.buttonframe.grid(row=3, column=0, pady=10)
 
         # Widgets for data entry
         # Setup params
@@ -125,8 +127,6 @@ class IVMeasurement:
         self.devicedescription_entry.grid(row=1, column=1)
 
         # Pixel selector
-        self.pixelselectorframe = tk.Frame(self.deviceframe)
-        self.pixelselectorframe.grid(row=2, column=0)
         tk.Label(self.pixelselectorframe, text='Pixels').grid(row=0, column=0)
 
         # Variable to hold pixels selected
@@ -225,6 +225,9 @@ class IVMeasurement:
                 self.set_shutter(self.shutter_condition)
                 time.sleep(1)
 
+                # Switch phidget relay to current pixel to be measured
+                self.phidgetchannels
+
                 for self.sweep_direction in self.sweep_directions:
                     self.iv_sweep()
 
@@ -259,6 +262,8 @@ class IVMeasurement:
         self.forwardIV = self.checkbutton_forwardiv.get()
         self.reverseIV = self.checkbutton_reverseiv.get()
         # TODO - collect pixel selections, once pixel switching is implemented
+        #debug
+        print(self.pixel_selection)
 
     def initialize_ossila(self):
         '''
