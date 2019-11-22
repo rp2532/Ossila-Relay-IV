@@ -5,7 +5,7 @@ OssilaMeasurement class attributes and methods
 import tkinter as tk
 import numpy as np 
 import os
-import xtralien
+import xtralien # Ossila X200 package
 from datetime import datetime
 import time
 
@@ -16,7 +16,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import seaborn as sns
 
-# Imports for Phidget relay
+# Packages for Phidget relay
 from Phidget22.Phidget import *
 from Phidget22.Devices.DigitalOutput import *
 
@@ -65,6 +65,7 @@ class IVMeasurement:
         # Device params
         self.devicename = 'testdevice'
         self.devicedescription = 'v good solar cell'
+        self.devicearea = 0.1033 # cm^2
 
         # Create Phidget channels
         self.phidgetchannels = []
@@ -92,11 +93,13 @@ class IVMeasurement:
         self.deviceframe = tk.Frame(self.master) # Frame for user-input device parameters
         self.deviceframe.grid(row=1, column=0, pady=10)
         self.pixelselectorframe = tk.Frame(self.master)
-        self.pixelselectorframe.grid(row=2, column=0)
+        self.pixelselectorframe.grid(row=2, column=0, pady=10)
         self.ivsweepframe = tk.Frame(self.master) # Frame for user-input IV sweep parameters
-        self.ivsweepframe.grid(row=2, column=0, pady=10)
+        self.ivsweepframe.grid(row=3, column=0, pady=20)
+        self.whichsweepsframe = tk.Frame(self.master) # Frame for selecting forward and reverse sweeps and light and dark
+        self.whichsweepsframe.grid(row=4, column=0, pady=10)
         self.buttonframe = tk.Frame(self.master)
-        self.buttonframe.grid(row=3, column=0, pady=10)
+        self.buttonframe.grid(row=5, column=0, pady=10)
 
         # Widgets for data entry
         # Setup params
@@ -116,15 +119,20 @@ class IVMeasurement:
         tk.Radiobutton(self.range_selector_frame, text='20 uA', var=self.range_tkvar, value=5).grid(row=2, column=4)
 
         # Device params
-        tk.Label(self.deviceframe, text='Device Name').grid(row=0,column=0)
+        tk.Label(self.deviceframe, text='Device Name').grid(row=0, column=0)
         self.devicename_entry = tk.Entry(self.deviceframe)
         self.devicename_entry.insert(0, self.devicename)
         self.devicename_entry.grid(row=0, column=1)
 
-        tk.Label(self.deviceframe, text='Device Description').grid(row=1,column=0)
+        tk.Label(self.deviceframe, text='Device Description').grid(row=1, column=0)
         self.devicedescription_entry = tk.Entry(self.deviceframe)
         self.devicedescription_entry.insert(0, self.devicedescription)
         self.devicedescription_entry.grid(row=1, column=1)
+
+        tk.Label(self.deviceframe, text='Device Area (cm2)').grid(row=2, column=0)
+        self.devicearea_entry = tk.Entry(self.deviceframe)
+        self.devicearea_entry.insert(0, self.devicearea)
+        self.devicearea_entry.grid(row=2, column=1)
 
         # Pixel selector
         tk.Label(self.pixelselectorframe, text='Pixels').grid(row=0, column=0)
@@ -136,6 +144,7 @@ class IVMeasurement:
         for i in range(self.num_devices_per_pixel):
             self.pixel_selection.append(tk.BooleanVar())
             tk.Checkbutton(self.pixelselectorframe, text=self.pixel_letters[i], variable=self.pixel_selection[i]).grid(row=1, column=i)
+        self.pixel_selection[0].set(True) # Set pixel A alone to be enabled by default
 
         # IV sweep params 
         tk.Label(self.ivsweepframe, text='V start').grid(row=0,column=0)
@@ -155,19 +164,19 @@ class IVMeasurement:
 
         self.checkbutton_forwardiv = tk.BooleanVar()
         self.checkbutton_forwardiv.set(False)
-        tk.Checkbutton(self.ivsweepframe, text='Forward sweep', var=self.checkbutton_forwardiv).grid(row=3, column=0)
+        tk.Checkbutton(self.whichsweepsframe, text='Forward sweep', var=self.checkbutton_forwardiv).grid(row=0, column=0)
 
         self.checkbutton_reverseiv = tk.BooleanVar()
         self.checkbutton_reverseiv.set(True)
-        tk.Checkbutton(self.ivsweepframe, text='Reverse sweep', var=self.checkbutton_reverseiv).grid(row=4, column=0)
+        tk.Checkbutton(self.whichsweepsframe, text='Reverse sweep', var=self.checkbutton_reverseiv).grid(row=1, column=0)
 
         self.checkbutton_lightiv = tk.BooleanVar()
         self.checkbutton_lightiv.set(True)
-        tk.Checkbutton(self.ivsweepframe, text='Light IV', var=self.checkbutton_lightiv).grid(row=5, column=0)
+        tk.Checkbutton(self.whichsweepsframe, text='Light IV', var=self.checkbutton_lightiv).grid(row=0, column=1)
 
         self.checkbutton_darkiv = tk.BooleanVar()
         self.checkbutton_darkiv.set(True)
-        tk.Checkbutton(self.ivsweepframe, text='Dark IV', var=self.checkbutton_darkiv).grid(row=6, column=0)
+        tk.Checkbutton(self.whichsweepsframe, text='Dark IV', var=self.checkbutton_darkiv).grid(row=1, column=1)
 
         # Collect all user-input params in a function that is triggered by pressing Run button
         # Run button
@@ -179,7 +188,7 @@ class IVMeasurement:
 
     def __del__(self):
         '''
-        Desctructor - exit appropriately by closing all open Ossila X100 Device instances
+        Desctructor - exit appropriately by closing all open Ossila Device instances
         '''
         for device in self.open_devices:
             device.close()
@@ -188,7 +197,7 @@ class IVMeasurement:
     def run(self):
         '''
         Main run IV sweep function
-        '''
+        ''' 
         # Collect and update all user-input params
         self.collect_user_parameters()
 
@@ -204,7 +213,7 @@ class IVMeasurement:
 
         for i in range(self.num_devices_per_pixel):
             if self.pixel_selection[i].get():
-                self.pixels.append(self.pixel_letters[i])
+                self.pixels.append(i)
 
         # Print user-input parameters if desired
         if self.verbose:
@@ -223,16 +232,21 @@ class IVMeasurement:
             for self.shutter_condition in self.shutter_conditions:
                 # Set shutter appropriately and wait a second for it to execute
                 self.set_shutter(self.shutter_condition)
-                time.sleep(1)
+                time.sleep(0.5)
 
                 # Switch phidget relay to current pixel to be measured
-                self.phidgetchannels
+                #debug
+                #self.phidgetchannels[self.pixel].setState(True)
 
                 for self.sweep_direction in self.sweep_directions:
                     self.iv_sweep()
 
-        # Save result to file
-        self.save_result()
+                # Turn off phidget relay for current pixel
+                #debug
+                #self.phidgetchannels[self.pixel].setState(False)
+
+                # Save result to file
+                self.save_result()
 
         # Reinitialize list of scans to run to be empty lists
         self.reset_tasklist()
@@ -253,6 +267,7 @@ class IVMeasurement:
         self.range1 = int(self.range_tkvar.get())
         self.devicename = self.devicename_entry.get()
         self.devicedescription = self.devicedescription_entry.get()
+        self.devicearea = float(self.devicearea_entry.get())
         self.vstart = float(self.vstart_entry.get())
         self.vstop = float(self.vstop_entry.get())
         self.vstep = float(self.vstep_entry.get())
@@ -261,9 +276,6 @@ class IVMeasurement:
         self.darkIV = self.checkbutton_darkiv.get()
         self.forwardIV = self.checkbutton_forwardiv.get()
         self.reverseIV = self.checkbutton_reverseiv.get()
-        # TODO - collect pixel selections, once pixel switching is implemented
-        #debug
-        print(self.pixel_selection)
 
     def initialize_ossila(self):
         '''
@@ -309,6 +321,10 @@ class IVMeasurement:
         # Run IV sweep, store result in instance variable
         self.result = np.vstack([self.ossila.smu1.oneshot(v) for v in voltages])
 
+        # Divide current by area to return current density
+        # Multiply current by 1000 to return current in mA
+        self.result[:,1] = self.result[:,1]*1000/self.devicearea
+
         # Plot the latest result
         self.plot_new_result()
 
@@ -318,11 +334,14 @@ class IVMeasurement:
         Set plot appearance settings
         '''
         # Plot appearance settings
-        sns.set(font_scale=2.)
+        sns.set(font_scale=1.5)
         sns.set_style('ticks', {'xtick.direction': 'in', 'ytick.direction': 'in', 'legend.frameon': True, 'grid.color': 'k', 'axes.edgecolor': 'k'})
         matplotlib.rcParams['lines.linewidth'] = 1.5
         matplotlib.rcParams['axes.linewidth'] = 1.5
         matplotlib.rcParams['axes.titlesize'] = 12.
+        matplotlib.rcParams['xtick.labelsize'] = 12.
+        matplotlib.rcParams['ytick.labelsize'] = 12.
+        matplotlib.rcParams['legend.fontsize'] = 10.
 
         # Create figure
         self.plot = Figure()
@@ -333,23 +352,56 @@ class IVMeasurement:
         ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.2e'))
         ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%.2f'))
 
+        # Axis labels
+        ax.yaxis.set_label('J (mA cm-2)')
+        ax.xaxis.set_label('V (V)')
+
         # Attach figure to canvas in master window
         self.plot_canvas = FigureCanvasTkAgg(self.plot, master=self.master)
-        self.plot_canvas.get_tk_widget().grid(row=0, column=1)
+        self.plot_canvas.get_tk_widget().grid(row=0, rowspan=5, column=1)
+        self.plot_canvas.draw()
 
     def plot_new_result(self):
         '''
         Plot the latest result to existing plot
         '''
-        self.subplot1.plot(self.result[:,0], self.result[:,1])
+        self.label = 'px' + self.pixel_letters[int(self.pixel)]
+        if self.shutter_condition == 'open':
+            self.label = self.label + '_' + 'light'
+        else:
+            self.label = self.label + '_' + 'dark'
+        if self.sweep_direction == 'forward':
+            self.label = self.label + '_' + 'forward' 
+        else:
+            self.label = self.label + '_' + 'reverse'
+        self.subplot1.plot(self.result[:,0], self.result[:,1], label=self.label)
+        self.subplot1.legend(loc='upper left')
         self.plot_canvas.draw()
-        # TODO - update legend?
 
     def save_result(self):
         '''
         Save IV result to CSV file
         '''
-        header = 'Voltage (V), Current (A)'
+        header = str(datetime.now()) # First line of header - current time
+        header = header + '\nDevice Name,' + self.devicename
+        header = header + '\nDevice Description,' + self.devicedescription
+        header = header + '\nDevice Area,' + str(self.devicearea)
+        header = header + '\nPixel,' + self.pixel_letters[self.pixel]
+
+        header = header + '\nPrecision,' + str(self.precision)
+        header = header + '\nRange,' + str(self.range1)
+        header = header + '\nV start,' + str(self.vstart)
+        header = header + '\nV stop,' + str(self.vstop)
+        header = header + '\nV step,' + str(self.vstep)
+
+        header = header + '\nSweep direction,' + self.sweep_direction
+
+        if self.shutter_condition == 'open':
+            header = header + '\nShutter,' + 'light'
+        else:
+            header = header + '\nShutter,' + 'dark'
+
+        header = header + '\nVoltage (V),Current (A)'
         currenttime = str(datetime.now()) # to add timestamp to filename
         outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
 
