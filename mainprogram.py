@@ -68,6 +68,10 @@ class IVMeasurement:
         self.devicearea = 0.1033 # cm^2
 
         # Create Phidget channels
+        self.phidgetchannel = DigitalOutput()
+        self.phidgetchannel.setDeviceSerialNumber(563146)
+        self.phidgetchannel.setHubPort(0)
+        '''
         self.phidgetchannels = []
         for i in range(6):
             self.phidgetchannels.append(DigitalOutput())
@@ -78,7 +82,9 @@ class IVMeasurement:
             # Set channel number
             self.phidgetchannels[i].setChannel(i)
             # Open channel
-            self.phidgetchannels[i].open()
+            #self.phidgetchannels[i].open()
+            self.phidgetchannels[i].openWaitForAttachment(5000)
+        '''
 
         # Create the GUI
         self.master = tk.Tk()
@@ -190,8 +196,13 @@ class IVMeasurement:
         '''
         Desctructor - exit appropriately by closing all open Ossila Device instances
         '''
+        # Close open Ossila devices
         for device in self.open_devices:
             device.close()
+        # Close open Phidget channels
+        #for i in range(6):
+        #    self.phidgetchannels[i].close()
+        self.phidgetchannel.close()
 
     # Class methods
     def run(self):
@@ -232,18 +243,20 @@ class IVMeasurement:
             for self.shutter_condition in self.shutter_conditions:
                 # Set shutter appropriately and wait a second for it to execute
                 self.set_shutter(self.shutter_condition)
-                time.sleep(0.5)
+                #debug
+                #time.sleep(0.5)
 
                 # Switch phidget relay to current pixel to be measured
-                #debug
-                #self.phidgetchannels[self.pixel].setState(True)
+                self.phidgetchannel.setChannel(self.pixel)
+                self.phidgetchannel.openWaitForAttachment(2000)
+                self.phidgetchannel.setState(True)
 
                 for self.sweep_direction in self.sweep_directions:
                     self.iv_sweep()
 
                 # Turn off phidget relay for current pixel
-                #debug
-                #self.phidgetchannels[self.pixel].setState(False)
+                self.phidgetchannel.setState(False)
+                self.phidgetchannel.close()
 
                 # Save result to file
                 self.save_result()
@@ -282,6 +295,7 @@ class IVMeasurement:
         Connect to Ossila SMU over ethernet and set the self.ossila object
         '''
         self.ossila = xtralien.X100.Network(self.smu_ipaddress)
+        self.ossila.smu1.set.enabled(1, response=0)
         self.open_devices.append(self.ossila)
 
     def print_all_params(self):
@@ -403,9 +417,11 @@ class IVMeasurement:
 
         header = header + '\nVoltage (V),Current (A)'
         currenttime = str(datetime.now()) # to add timestamp to filename
-        outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
-
+        #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
+        
+        outfile = self.devicename + str(self.pixel) + '.csv'
         np.savetxt(outfile, self.result, delimiter=',', header=header)
+        
 
     def set_shutter(self, state='closed'):
         '''
