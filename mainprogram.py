@@ -189,7 +189,7 @@ class IVMeasurement:
         for device in self.open_devices:
             device.close()
         # Close serial connection to Arduino
-        self.ser.close()
+        self.arduino.close()
 
     # Class methods
     def run(self):
@@ -234,7 +234,7 @@ class IVMeasurement:
                 #time.sleep(0.5) # Allow time for shutter to open
 
                 # Tell Arduino to turn on pixel to be measured
-                self.arduino.write(self.pixel.encode('ascii'))
+                self.arduino.write(self.pixel_letters[self.pixel].encode('ascii'))
 
                 for self.sweep_direction in self.sweep_directions:
                     self.iv_sweep()
