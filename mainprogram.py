@@ -380,7 +380,8 @@ class IVMeasurement:
         '''
         Save IV result to CSV file
         '''
-        header = str(datetime.now()) # First line of header - current time
+        timenow = str(datetime.now())
+        header = timenow # First line of header - current time
         header = header + '\nDevice Name,' + self.devicename
         header = header + '\nDevice Description,' + self.devicedescription
         header = header + '\nDevice Area,' + str(self.devicearea)
@@ -403,7 +404,12 @@ class IVMeasurement:
         currenttime = str(datetime.now()) # to add timestamp to filename
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
-        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + '.csv'
+        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + timenow + '.csv'
+
+        # Make directory for data if it does not already exist
+        if not os.path.exists('./Data'):
+            os.makedirs('./Data/')
+
         np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header)
         
 
