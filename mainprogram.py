@@ -16,28 +16,30 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 import seaborn as sns
 
-# Packages for Phidget relay
-from Phidget22.Phidget import *
-from Phidget22.Devices.DigitalOutput import *
+# For serial communication with Arduino 
+import serial
 
 class IVMeasurement:
     '''
     Commands to initialize and run measurements on Ossila X200
     '''
 
-    def __init__(self, smu_ipaddress, verbose=False):
+    def __init__(self, smu_ipaddress, arduino_port, verbose=False):
         '''
         Initialize IVMeasurement object, create the GUI window, attach Phidget relay
         '''
+        ###### OSSILA #########
         # Accept and store ip address of Ossila unit passed during instance creation
         self.smu_ipaddress = smu_ipaddress
         self.verbose = verbose
         self.initialized = False
+        self.arduino_port = arduino_port
 
         # Maintain a list of all running Ossila X100 Device instances
         # Used for closing them (and their connections) appropriately upon exit
         self.open_devices = []
 
+        ###### INPUT PARAMETER VARIABLES #########
         # Create instance variables for all parameters and set default values
         # Setup params
         self.precision = 4
@@ -51,11 +53,11 @@ class IVMeasurement:
 
         # IV sweep params
         self.vstart = -0.2 # V
-        self.vstop = 0.2 # V
-        self.vstep = 0.01 # V
+        self.vstop = 1.2 # V
+        self.vstep = 0.05 # V
         self.lightIV = True # Run light IV sweep?
-        self.darkIV = True # Run dark IV sweep?
-        self.forwardIV = True # Run forward IV sweep?
+        self.darkIV = False # Run dark IV sweep?
+        self.forwardIV = False # Run forward IV sweep?
         self.reverseIV = True # Run reverse IV sweep?
 
         self.sweep_directions = []
@@ -67,25 +69,12 @@ class IVMeasurement:
         self.devicedescription = 'v good solar cell'
         self.devicearea = 0.1033 # cm^2
 
-        # Create Phidget channels
-        self.phidgetchannel = DigitalOutput()
-        self.phidgetchannel.setDeviceSerialNumber(563146)
-        self.phidgetchannel.setHubPort(0)
-        '''
-        self.phidgetchannels = []
-        for i in range(6):
-            self.phidgetchannels.append(DigitalOutput())
-            # Set serial number of hub port
-            self.phidgetchannels[i].setDeviceSerialNumber(563146) 
-            # Set hub port that the relay is connected to 
-            self.phidgetchannels[i].setHubPort(0)
-            # Set channel number
-            self.phidgetchannels[i].setChannel(i)
-            # Open channel
-            #self.phidgetchannels[i].open()
-            self.phidgetchannels[i].openWaitForAttachment(5000)
-        '''
+        ###### ARDUINO #########
+        # Initialize serial connection to Arduino 
+        # Arduino controls the switching relay
+        self.arduino = serial.Serial(self.arduino_port, 9600)
 
+        ###### GUI #########
         # Create the GUI
         self.master = tk.Tk()
         self.master.title('IV sweep program') # Window title
@@ -146,8 +135,8 @@ class IVMeasurement:
         # Variable to hold pixels selected
         self.pixel_selection = []
         self.pixel_letters = ['A', 'B', 'C', 'D', 'E', 'F']
-        self.num_devices_per_pixel = 6
-        for i in range(self.num_devices_per_pixel):
+        self.num_pixels_per_substrate = 6
+        for i in range(self.num_pixels_per_substrate):
             self.pixel_selection.append(tk.BooleanVar())
             tk.Checkbutton(self.pixelselectorframe, text=self.pixel_letters[i], variable=self.pixel_selection[i]).grid(row=1, column=i)
         self.pixel_selection[0].set(True) # Set pixel A alone to be enabled by default
@@ -199,10 +188,8 @@ class IVMeasurement:
         # Close open Ossila devices
         for device in self.open_devices:
             device.close()
-        # Close open Phidget channels
-        #for i in range(6):
-        #    self.phidgetchannels[i].close()
-        self.phidgetchannel.close()
+        # Close serial connection to Arduino
+        self.ser.close()
 
     # Class methods
     def run(self):
@@ -222,7 +209,7 @@ class IVMeasurement:
         if self.forwardIV:
             self.sweep_directions.append('forward')
 
-        for i in range(self.num_devices_per_pixel):
+        for i in range(self.num_pixels_per_substrate):
             if self.pixel_selection[i].get():
                 self.pixels.append(i)
 
@@ -244,19 +231,16 @@ class IVMeasurement:
                 # Set shutter appropriately and wait a second for it to execute
                 self.set_shutter(self.shutter_condition)
                 #debug
-                #time.sleep(0.5)
+                #time.sleep(0.5) # Allow time for shutter to open
 
-                # Switch phidget relay to current pixel to be measured
-                self.phidgetchannel.setChannel(self.pixel)
-                self.phidgetchannel.openWaitForAttachment(2000)
-                self.phidgetchannel.setState(True)
+                # Tell Arduino to turn on pixel to be measured
+                self.arduino.write(self.pixel.encode('ascii'))
 
                 for self.sweep_direction in self.sweep_directions:
                     self.iv_sweep()
 
-                # Turn off phidget relay for current pixel
-                self.phidgetchannel.setState(False)
-                self.phidgetchannel.close()
+                # Tell Arduino to turn off all pixels
+                self.arduino.write(b'z')
 
                 # Save result to file
                 self.save_result()
