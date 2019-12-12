@@ -404,7 +404,7 @@ class IVMeasurement:
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
         outfile = self.devicename + str(self.pixel) + '.csv'
-        np.savetxt(outfile, self.result, delimiter=',', header=header)
+        np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header)
         
 
     def set_shutter(self, state='closed'):
