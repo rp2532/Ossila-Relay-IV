@@ -1,4 +1,4 @@
-# Ossila-IV-measurement
+# Ossila-Relay-IV
 Measure IV sweeps using an Ossila X200 source measure unit and Velleman VMA436 relay board controlled by an Arduino Uno
 
 Instructions 
