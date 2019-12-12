@@ -201,9 +201,9 @@ class IVMeasurement:
 
         # Compile lists of sweeps to run
         if self.lightIV:
-            self.shutter_conditions.append('open')
+            self.shutter_conditions.append('light')
         if self.darkIV:
-            self.shutter_conditions.append('closed')
+            self.shutter_conditions.append('dark')
         if self.reverseIV:
             self.sweep_directions.append('reverse')
         if self.forwardIV:
@@ -364,7 +364,7 @@ class IVMeasurement:
         Plot the latest result to existing plot
         '''
         self.label = 'px' + self.pixel_letters[int(self.pixel)]
-        if self.shutter_condition == 'open':
+        if self.shutter_condition == 'light':
             self.label = self.label + '_' + 'light'
         else:
             self.label = self.label + '_' + 'dark'
@@ -403,7 +403,7 @@ class IVMeasurement:
         currenttime = str(datetime.now()) # to add timestamp to filename
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
-        outfile = self.devicename + str(self.pixel) + '.csv'
+        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + '.csv'
         np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header)
         
 
