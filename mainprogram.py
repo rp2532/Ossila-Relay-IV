@@ -237,13 +237,14 @@ class IVMeasurement:
                 self.arduino.write(self.pixel_letters[self.pixel].encode('ascii'))
 
                 for self.sweep_direction in self.sweep_directions:
+                    # Run IV sweep
                     self.iv_sweep()
+                    
+                    # Save result to file
+                    self.save_result()
 
                 # Tell Arduino to turn off all pixels
                 self.arduino.write(b'z')
-
-                # Save result to file
-                self.save_result()
 
         # Reinitialize list of scans to run to be empty lists
         self.reset_tasklist()
@@ -380,7 +381,7 @@ class IVMeasurement:
         '''
         Save IV result to CSV file
         '''
-        timenow = str(datetime.now())
+        timenow = str(datetime.now()).replace(':', '-')
         header = timenow # First line of header - current time
         header = header + '\nDevice Name,' + self.devicename
         header = header + '\nDevice Description,' + self.devicedescription
@@ -404,7 +405,7 @@ class IVMeasurement:
         currenttime = str(datetime.now()) # to add timestamp to filename
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
-        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + timenow + '.csv'
+        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(self.shutter_condition) + '_' + self.sweep_direction + '_' + timenow + '.csv'
 
         # Make directory for data if it does not already exist
         if not os.path.exists('./Data'):
