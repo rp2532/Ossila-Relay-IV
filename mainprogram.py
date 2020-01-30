@@ -237,13 +237,14 @@ class IVMeasurement:
                 self.arduino.write(self.pixel_letters[self.pixel].encode('ascii'))
 
                 for self.sweep_direction in self.sweep_directions:
+                    # Run IV sweep
                     self.iv_sweep()
+                    
+                    # Save result to file
+                    self.save_result()
 
                 # Tell Arduino to turn off all pixels
                 self.arduino.write(b'z')
-
-                # Save result to file
-                self.save_result()
 
         # Reinitialize list of scans to run to be empty lists
         self.reset_tasklist()
@@ -383,7 +384,7 @@ class IVMeasurement:
         '''
         Save IV result to CSV file
         '''
-        timenow = str(datetime.now())
+        timenow = str(datetime.now()).replace(':', '-')
         header = timenow # First line of header - current time
         header = header + '\nDevice Name,' + self.devicename
         header = header + '\nDevice Description,' + self.devicedescription
