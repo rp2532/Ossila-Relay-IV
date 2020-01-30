@@ -354,6 +354,9 @@ class IVMeasurement:
         ax.yaxis.set_label('J (mA cm-2)')
         ax.xaxis.set_label('V (V)')
 
+        # Grid
+        ax.grid(True, alpha=0.25)
+
         # Attach figure to canvas in master window
         self.plot_canvas = FigureCanvasTkAgg(self.plot, master=self.master)
         self.plot_canvas.get_tk_widget().grid(row=0, rowspan=5, column=1)
@@ -404,13 +407,13 @@ class IVMeasurement:
         currenttime = str(datetime.now()) # to add timestamp to filename
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
-        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + timenow + '.csv'
+        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + timenow + '.txt'
 
         # Make directory for data if it does not already exist
         if not os.path.exists('./Data'):
             os.makedirs('./Data/')
 
-        np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header)
+        np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header, comment='')
         
 
     def set_shutter(self, state='closed'):
