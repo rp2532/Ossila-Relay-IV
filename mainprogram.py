@@ -230,7 +230,7 @@ class IVMeasurement:
             for self.shutter_condition in self.shutter_conditions:
                 # Set shutter appropriately and wait a second for it to execute
                 self.set_shutter(self.shutter_condition)
-                #debug
+				
                 #time.sleep(0.5) # Allow time for shutter to open
 
                 # Tell Arduino to turn on pixel to be measured
@@ -404,17 +404,17 @@ class IVMeasurement:
         else:
             header = header + '\nShutter,' + 'dark'
 
-        header = header + '\nVoltage (V),Current (A)'
+        header = header + '\nVoltage,Current'
         currenttime = str(datetime.now()) # to add timestamp to filename
         #outfile = os.path.join(self.data_folder, self.devicename+' '+currenttime+'.csv')
         
-        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(shutter_condition) + '_' + self.sweep_direction + timenow + '.txt'
+        outfile = self.devicename + '_px' + str(self.pixel_letters[self.pixel]) + '_' + str(self.shutter_condition) + '_' + self.sweep_direction + timenow + '.txt'
 
         # Make directory for data if it does not already exist
         if not os.path.exists('./Data'):
             os.makedirs('./Data/')
 
-        np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header, comment='')
+        np.savetxt(os.path.join('./Data/',outfile), self.result, delimiter=',', header=header, comments='')
         
 
     def set_shutter(self, state='closed'):
