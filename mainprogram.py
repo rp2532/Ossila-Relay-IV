@@ -224,13 +224,13 @@ class IVMeasurement:
 
          # Create figure to plot in 
         self.initialize_plot()
-
+        
         # Run all IV sweeps
         for self.pixel in self.pixels:
             for self.shutter_condition in self.shutter_conditions:
                 # Set shutter appropriately and wait a second for it to execute
                 self.set_shutter(self.shutter_condition)
-				
+                
                 #time.sleep(0.5) # Allow time for shutter to open
 
                 # Tell Arduino to turn on pixel to be measured
